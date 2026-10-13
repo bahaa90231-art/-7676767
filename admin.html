@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم | بهاء الدين الحسين</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="supabase-client.js"></script>
+    <style>
+        :root { --primary: #6c5ce7; --secondary: #00cec9; --accent: #fd79a8; --dark: #0a0a1a; --dark-2: #12122b; --dark-3: #1a1a3e; --text: #e8e8f0; --text-muted: #a0a0b8; --border: rgba(108, 92, 231, 0.15); --border-hover: rgba(108, 92, 231, 0.5); --card-bg: #12122b; --gradient-1: linear-gradient(135deg, #6c5ce7 0%, #00cec9 100%); --gradient-2: linear-gradient(135deg, #fd79a8 0%, #6c5ce7 100%); --shadow: 0 10px 40px rgba(108, 92, 231, 0.3); --shadow-hover: 0 20px 60px rgba(108, 92, 231, 0.5); --radius: 20px; --transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); --success: #00b894; --warning: #fdcb6e; --danger: #ff4757; }
+        body.light-mode { --dark: #f0f2f8; --dark-2: #fff; --dark-3: #f8f9ff; --text: #1a1a2e; --text-muted: #555570; --border: rgba(108, 92, 231, 0.2); --border-hover: rgba(108, 92, 231, 0.6); --card-bg: #fff; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; }
+        body { font-family: 'Cairo', sans-serif; background: var(--dark); color: var(--text); line-height: 1.8; overflow: hidden; transition: background 0.5s, color 0.5s; }
+        .bg-animated { position: fixed; inset: 0; z-index: -2; overflow: hidden; }
+        body.light-mode .bg-animated { opacity: 0.35; }
+        .bg-animated .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.4; animation: float 20s infinite; }
+        .bg-animated .orb:nth-child(1) { width: 500px; height: 500px; background: var(--primary); top: -200px; right: -100px; }
+        .bg-animated .orb:nth-child(2) { width: 400px; height: 400px; background: var(--secondary); bottom: -150px; left: -100px; animation-delay: -5s; }
+        .bg-animated .orb:nth-child(3) { width: 300px; height: 300px; background: var(--accent); top: 50%; left: 50%; animation-delay: -10s; }
+        @keyframes float { 0%,100% { transform: translate(0,0) scale(1); } 25% { transform: translate(50px,-50px) scale(1.1); } 50% { transform: translate(-30px,30px) scale(.9); } 75% { transform: translate(30px,50px) scale(1.05); } }
+
+        .login-screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100; background: rgba(0,0,0,0.6); backdrop-filter: blur(20px); }
+        .login-screen.hidden { display: none; }
+        .login-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 45px 35px; width: 100%; max-width: 420px; text-align: center; box-shadow: var(--shadow-hover); animation: pageIn 0.5s; }
+        @keyframes pageIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .login-icon { width: 80px; height: 80px; margin: 0 auto 25px; border-radius: 50%; background: var(--gradient-1); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white; box-shadow: var(--shadow); animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(108,92,231,.5); } 50% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(108,92,231,0); } }
+        .login-card h2 { font-size: 1.5rem; font-weight: 900; margin-bottom: 10px; }
+        .login-card p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 30px; }
+        .login-input { width: 100%; padding: 16px 20px; background: var(--dark-3); border: 2px solid var(--border); border-radius: 12px; color: var(--text); font-family: 'Cairo', sans-serif; font-size: 1rem; text-align: center; outline: none; transition: var(--transition); margin-bottom: 15px; }
+        .login-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(108,92,231,.15); }
+        .login-input.email { text-align: left; direction: ltr; }
+        .login-btn { width: 100%; padding: 16px; background: var(--gradient-1); color: white; border: none; border-radius: 12px; font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 1rem; cursor: pointer; transition: var(--transition); margin-bottom: 15px; }
+        .login-btn:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+        .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .login-error { background: rgba(255,71,87,0.15); color: var(--danger); padding: 10px; border-radius: 10px; font-size: 0.85rem; margin-bottom: 15px; display: none; }
+        .login-error.visible { display: block; }
+        .login-back { display: inline-flex; align-items: center; gap: 8px; margin-top: 20px; color: var(--text-muted); text-decoration: none; font-size: 0.85rem; }
+        .login-back:hover { color: var(--primary); }
+
+        .admin-container { display: none; height: 100vh; padding: 20px; }
+        .admin-container.active { display: flex; }
+        .admin-panel { background: var(--dark); border: 1px solid var(--border); border-radius: var(--radius); width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow-hover); }
+        .admin-header { padding: 18px 25px; display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); border-bottom: 1px solid var(--border); gap: 15px; }
+        .admin-header-title { display: flex; align-items: center; gap: 12px; font-weight: 900; font-size: 1.15rem; }
+        .admin-header-title i { color: var(--primary); font-size: 1.4rem; }
+        .admin-header-actions { display: flex; gap: 10px; align-items: center; }
+        .user-badge { display: flex; align-items: center; gap: 8px; padding: 8px 15px; background: rgba(108,92,231,0.1); border: 1px solid var(--border); border-radius: 50px; font-size: 0.8rem; color: var(--text-muted); }
+        .user-badge i { color: var(--success); font-size: 0.5rem; }
+        .mini-btn { width: 40px; height: 40px; border-radius: 10px; background: var(--dark-3); border: 1px solid var(--border); color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: var(--transition); font-size: 0.9rem; text-decoration: none; }
+        .mini-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .mini-btn.danger:hover { border-color: var(--danger); color: var(--danger); background: rgba(255,71,87,.1); }
+
+        .admin-body { flex: 1; display: grid; grid-template-columns: 240px 1fr; overflow: hidden; }
+        .admin-sidebar { background: var(--card-bg); border-left: 1px solid var(--border); padding: 20px 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+        .admin-nav-item { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: 12px; color: var(--text-muted); font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: var(--transition); border: none; background: transparent; font-family: 'Cairo', sans-serif; text-align: right; width: 100%; position: relative; }
+        .admin-nav-item:hover { background: rgba(108,92,231,.1); color: var(--text); }
+        .admin-nav-item.active { background: var(--gradient-1); color: white; box-shadow: var(--shadow); }
+        .admin-nav-item i { width: 20px; text-align: center; font-size: 1rem; }
+        .admin-nav-item .badge { margin-right: auto; background: var(--danger); color: white; padding: 2px 8px; border-radius: 50px; font-size: 0.7rem; font-weight: 700; }
+
+        .admin-content { padding: 25px 30px; overflow-y: auto; }
+        .admin-tab { display: none; animation: pageIn 0.3s; }
+        .admin-tab.active { display: block; }
+        .admin-tab-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
+        .admin-tab-header h2 { font-size: 1.5rem; font-weight: 900; }
+        .admin-tab-header p { color: var(--text-muted); font-size: 0.85rem; margin-top: 5px; }
+
+        .stats-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 22px; display: flex; align-items: center; gap: 18px; transition: var(--transition); }
+        .stat-card:hover { transform: translateY(-5px); border-color: var(--border-hover); box-shadow: var(--shadow); }
+        .stat-card-icon { width: 55px; height: 55px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: white; flex-shrink: 0; }
+        .stat-card.purple .stat-card-icon { background: var(--gradient-1); }
+        .stat-card.green .stat-card-icon { background: linear-gradient(135deg, #00b894, #55efc4); }
+        .stat-card.pink .stat-card-icon { background: linear-gradient(135deg, #fd79a8, #e84393); }
+        .stat-card.yellow .stat-card-icon { background: linear-gradient(135deg, #fdcb6e, #f39c12); }
+        .stat-card-info h4 { font-size: 1.8rem; font-weight: 900; line-height: 1; margin-bottom: 5px; }
+        .stat-card-info p { color: var(--text-muted); font-size: 0.85rem; font-weight: 600; }
+
+        .items-list { display: flex; flex-direction: column; gap: 12px; }
+        .list-item { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 18px; display: flex; align-items: center; gap: 15px; transition: var(--transition); }
+        .list-item:hover { border-color: var(--border-hover); transform: translateX(-5px); }
+        .list-item-icon { width: 50px; height: 50px; border-radius: 12px; background: var(--gradient-1); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+        .list-item-info { flex: 1; min-width: 0; }
+        .list-item-info h4 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .list-item-info p { color: var(--text-muted); font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .list-item-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+        .admin-form-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.8); backdrop-filter: blur(10px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 15px; }
+        .admin-form-overlay.active { display: flex; }
+        .admin-form-modal { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); width: 100%; max-width: 650px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; animation: pageIn 0.3s; }
+        .admin-form-header { padding: 18px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+        .admin-form-header h3 { font-size: 1.15rem; font-weight: 700; }
+        .admin-form-body { padding: 25px; overflow-y: auto; flex: 1; }
+        .admin-form-footer { padding: 15px 25px; display: flex; gap: 10px; justify-content: flex-end; border-top: 1px solid var(--border); }
+        .admin-btn-primary, .admin-btn-secondary { padding: 12px 25px; border-radius: 12px; font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: var(--transition); border: none; display: inline-flex; align-items: center; gap: 8px; }
+        .admin-btn-primary { background: var(--gradient-1); color: white; box-shadow: var(--shadow); }
+        .admin-btn-primary:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+        .admin-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+        .admin-btn-secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+        .admin-btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+        .form-group label { font-weight: 700; font-size: 0.9rem; color: var(--text); }
+        .form-group input, .form-group select, .form-group textarea { padding: 14px 18px; background: var(--dark-3); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-family: 'Cairo', sans-serif; font-size: 0.9rem; outline: none; width: 100%; transition: var(--transition); }
+        .form-group textarea { resize: vertical; min-height: 120px; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(108,92,231,.15); }
+
+        .messages-list { display: flex; flex-direction: column; gap: 12px; }
+        .message-item { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 18px; cursor: pointer; transition: var(--transition); }
+        .message-item.unread { border-right: 3px solid var(--primary); }
+        .message-item:hover { border-color: var(--border-hover); transform: translateX(-5px); }
+        .message-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; flex-wrap: wrap; }
+        .message-sender { font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; }
+        .message-sender i { color: var(--primary); }
+        .message-time { font-size: 0.75rem; color: var(--text-muted); }
+        .message-preview { color: var(--text-muted); font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-clamp: 2; }
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+        .empty-state i { font-size: 4rem; color: var(--primary); opacity: 0.3; margin-bottom: 20px; }
+        .empty-state h3 { font-size: 1.2rem; color: var(--text); margin-bottom: 8px; }
+        .loading-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+        .loading-state i { font-size: 3rem; color: var(--primary); animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .message-detail-row { display: flex; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        .message-detail-row:last-child { border-bottom: none; }
+        .message-detail-row strong { color: var(--secondary); min-width: 100px; flex-shrink: 0; }
+        .message-detail-row span { color: var(--text); word-break: break-word; }
+        .message-detail-body { background: var(--dark-3); padding: 15px; border-radius: 12px; margin-top: 15px; font-size: 0.9rem; line-height: 1.8; white-space: pre-wrap; }
+
+        .toast { position: fixed; bottom: 25px; right: 25px; background: var(--gradient-1); color: white; padding: 14px 22px; border-radius: 12px; font-weight: 600; font-size: 0.9rem; box-shadow: var(--shadow-hover); display: flex; align-items: center; gap: 10px; transform: translateY(200%); transition: var(--transition); z-index: 500; max-width: calc(100% - 50px); }
+        .toast.show { transform: translateY(0); }
+        .toast i { font-size: 1.2rem; }
+
+        @media (max-width: 900px) {
+            .admin-body { grid-template-columns: 1fr; }
+            .admin-sidebar { flex-direction: row; overflow-x: auto; border-left: none; border-bottom: 1px solid var(--border); padding: 10px; gap: 8px; }
+            .admin-nav-item { flex-direction: column; gap: 5px; padding: 10px 15px; font-size: 0.75rem; min-width: 80px; text-align: center; }
+            .admin-nav-item i { font-size: 1.1rem; }
+            .admin-nav-item .badge { margin: 0; position: absolute; top: 5px; left: 5px; }
+            .user-badge { display: none; }
+        }
+        @media (max-width: 768px) {
+            .admin-container { padding: 10px; }
+            .admin-content { padding: 20px 15px; }
+            .admin-tab-header h2 { font-size: 1.2rem; }
+            .stats-cards { grid-template-columns: 1fr; }
+            .admin-form-modal { max-height: 95vh; }
+            .list-item { flex-wrap: wrap; }
+            .list-item-info { min-width: 100%; order: 2; }
+            .form-row { grid-template-columns: 1fr; gap: 0; }
+        }
+        @media (max-width: 480px) {
+            .admin-header { padding: 12px 15px; }
+            .admin-header-title { font-size: 0.95rem; }
+            .login-card { padding: 35px 22px; }
+            .stat-card-info h4 { font-size: 1.5rem; }
+            .mini-btn { width: 36px; height: 36px; font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-animated"><div class="orb"></div><div class="orb"></div><div class="orb"></div></div>
+
+    <div class="login-screen" id="loginScreen">
+        <div class="login-card">
+            <div class="login-icon"><i class="fas fa-lock"></i></div>
+            <h2>لوحة التحكم</h2>
+            <p>أدخل بيانات الدخول للوصول إلى لوحة التحكم</p>
+            <div class="login-error" id="loginError"></div>
+            <input type="email" class="login-input email" id="adminEmail" placeholder="admin@example.com" autocomplete="username">
+            <input type="password" class="login-input" id="adminPassword" placeholder="••••••••" autocomplete="current-password">
+            <button class="login-btn" id="loginBtn" onclick="loginAdmin()"><i class="fas fa-sign-in-alt"></i> دخول</button>
+            <a href="index.html" class="login-back"><i class="fas fa-arrow-right"></i> العودة للموقع</a>
+        </div>
+    </div>
+
+    <div class="admin-container" id="adminContainer">
+        <div class="admin-panel">
+            <div class="admin-header">
+                <div class="admin-header-title"><i class="fas fa-sliders-h"></i><span>لوحة التحكم</span></div>
+                <div class="admin-header-actions">
+                    <div class="user-badge"><i class="fas fa-circle"></i><span id="userEmail">-</span></div>
+                    <a href="index.html" class="mini-btn" title="الموقع"><i class="fas fa-home"></i></a>
+                    <button class="mini-btn" onclick="toggleTheme()" title="الوضع"><i class="fas fa-moon" id="themeIcon"></i></button>
+                    <button class="mini-btn danger" onclick="logoutAdmin()" title="خروج"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </div>
+            <div class="admin-body">
+                <aside class="admin-sidebar">
+                    <button class="admin-nav-item active" data-tab="dashboard"><i class="fas fa-chart-line"></i><span>الرئيسية</span></button>
+                    <button class="admin-nav-item" data-tab="articles"><i class="fas fa-newspaper"></i><span>المقالات</span></button>
+                    <button class="admin-nav-item" data-tab="projects"><i class="fas fa-briefcase"></i><span>المشاريع</span></button>
+                    <button class="admin-nav-item" data-tab="messages"><i class="fas fa-inbox"></i><span>الرسائل</span><span class="badge" id="messagesBadge" style="display:none;">0</span></button>
+                </aside>
+                <div class="admin-content">
+                    <div class="admin-tab active" data-tab="dashboard">
+                        <div class="admin-tab-header">
+                            <div><h2>مرحباً بك 👋</h2><p>نظرة سريعة على إحصائيات موقعك</p></div>
+                            <button class="mini-btn" onclick="renderAdmin()" title="تحديث"><i class="fas fa-sync-alt"></i></button>
+                        </div>
+                        <div class="stats-cards">
+                            <div class="stat-card purple"><div class="stat-card-icon"><i class="fas fa-newspaper"></i></div><div class="stat-card-info"><h4 id="statArticles">0</h4><p>مقال</p></div></div>
+                            <div class="stat-card green"><div class="stat-card-icon"><i class="fas fa-eye"></i></div><div class="stat-card-info"><h4 id="statViews">0</h4><p>مشاهدة</p></div></div>
+                            <div class="stat-card pink"><div class="stat-card-icon"><i class="fas fa-envelope"></i></div><div class="stat-card-info"><h4 id="statMessages">0</h4><p>رسالة</p></div></div>
+                            <div class="stat-card yellow"><div class="stat-card-icon"><i class="fas fa-briefcase"></i></div><div class="stat-card-info"><h4 id="statProjects">0</h4><p>مشروع</p></div></div>
+                        </div>
+                        <h3 style="margin-bottom: 15px;">📈 المقالات الأكثر مشاهدة</h3>
+                        <div class="items-list" id="topArticlesList"><div class="loading-state"><i class="fas fa-circle-notch"></i></div></div>
+                    </div>
+                    <div class="admin-tab" data-tab="articles">
+                        <div class="admin-tab-header">
+                            <div><h2>إدارة المقالات</h2><p>أضف، عدّل، أو احذف المقالات</p></div>
+                            <button class="admin-btn-primary" onclick="openArticleForm()"><i class="fas fa-plus"></i> مقال جديد</button>
+                        </div>
+                        <div class="items-list" id="adminArticlesList"><div class="loading-state"><i class="fas fa-circle-notch"></i></div></div>
+                    </div>
+                    <div class="admin-tab" data-tab="projects">
+                        <div class="admin-tab-header">
+                            <div><h2>إدارة المشاريع</h2><p>أضف، عدّل، أو احذف المشاريع</p></div>
+                            <button class="admin-btn-primary" onclick="openProjectForm()"><i class="fas fa-plus"></i> مشروع جديد</button>
+                        </div>
+                        <div class="items-list" id="adminProjectsList"><div class="loading-state"><i class="fas fa-circle-notch"></i></div></div>
+                    </div>
+                    <div class="admin-tab" data-tab="messages">
+                        <div class="admin-tab-header">
+                            <div><h2>صندوق الرسائل</h2><p>طلبات الأدوات الواردة</p></div>
+                            <button class="admin-btn-secondary" onclick="clearAllMessages()"><i class="fas fa-trash"></i> حذف الكل</button>
+                        </div>
+                        <div class="messages-list" id="messagesList"><div class="loading-state"><i class="fas fa-circle-notch"></i></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="admin-form-overlay" id="articleFormOverlay">
+        <div class="admin-form-modal">
+            <div class="admin-form-header"><h3 id="articleFormTitle">مقال جديد</h3><button class="mini-btn danger" onclick="closeArticleForm()"><i class="fas fa-times"></i></button></div>
+            <div class="admin-form-body">
+                <input type="hidden" id="articleEditId">
+                <div class="form-group"><label>عنوان المقال *</label><input type="text" id="articleFormTitleInput" placeholder="عنوان جذاب..."></div>
+                <div class="form-row">
+                    <div class="form-group"><label>الفئة</label><input type="text" id="articleFormCategory" value="عام"></div>
+                    <div class="form-group"><label>مدة القراءة</label><input type="text" id="articleFormReadTime" value="5 دقائق"></div>
+                </div>
+                <div class="form-group"><label>الأيقونة</label>
+                    <select id="articleFormIcon">
+                        <option value="fa-code">💻 كود</option>
+                        <option value="fa-js">📜 JavaScript</option>
+                        <option value="fa-mobile-alt">📱 جوال</option>
+                        <option value="fa-palette">🎨 تصميم</option>
+                        <option value="fa-rocket">🚀 صاروخ</option>
+                        <option value="fa-lightbulb">💡 فكرة</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>الوصف المختصر *</label><textarea id="articleFormExcerpt" style="min-height:70px;"></textarea></div>
+                <div class="form-group"><label>المحتوى الكامل (HTML) *</label><textarea id="articleFormContent" style="min-height:180px;direction:ltr;text-align:left;font-family:monospace;"></textarea></div>
+            </div>
+            <div class="admin-form-footer">
+                <button class="admin-btn-secondary" onclick="closeArticleForm()">إلغاء</button>
+                <button class="admin-btn-primary" id="saveArticleBtn" onclick="saveArticle()"><i class="fas fa-save"></i> حفظ</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="admin-form-overlay" id="projectFormOverlay">
+        <div class="admin-form-modal">
+            <div class="admin-form-header"><h3 id="projectFormTitle">مشروع جديد</h3><button class="mini-btn danger" onclick="closeProjectForm()"><i class="fas fa-times"></i></button></div>
+            <div class="admin-form-body">
+                <input type="hidden" id="projectEditId">
+                <div class="form-group"><label>اسم المشروع *</label><input type="text" id="projectFormName"></div>
+                <div class="form-group"><label>رابط المشروع *</label><input type="url" id="projectFormUrl" placeholder="https://..." style="direction:ltr;text-align:left;"></div>
+                <div class="form-group"><label>الوصف *</label><textarea id="projectFormDesc" style="min-height:80px;"></textarea></div>
+                <div class="form-row">
+                    <div class="form-group"><label>الفئة</label>
+                        <select id="projectFormCategory">
+                            <option value="site">موقع</option>
+                            <option value="tool">أداة ذكية</option>
+                            <option value="edu">تعليمي</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>الوسوم (مفصولة بفاصلة)</label><input type="text" id="projectFormTags"></div>
+                </div>
+            </div>
+            <div class="admin-form-footer">
+                <button class="admin-btn-secondary" onclick="closeProjectForm()">إلغاء</button>
+                <button class="admin-btn-primary" id="saveProjectBtn" onclick="saveProject()"><i class="fas fa-save"></i> حفظ</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="admin-form-overlay" id="messageViewOverlay">
+        <div class="admin-form-modal">
+            <div class="admin-form-header"><h3>تفاصيل الرسالة</h3><button class="mini-btn danger" onclick="closeMessageView()"><i class="fas fa-times"></i></button></div>
+            <div class="admin-form-body" id="messageViewBody"></div>
+            <div class="admin-form-footer">
+                <button class="admin-btn-secondary" onclick="closeMessageView()">إغلاق</button>
+                <button class="admin-btn-secondary" id="deleteMessageBtn" style="border-color:var(--danger);color:var(--danger);"><i class="fas fa-trash"></i> حذف</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toastMsg">تم بنجاح</span></div>
+
+    <script>
+        let articles = [], projects = [], messages = [];
+        let currentUser = null, initialized = false;
+
+        const loginScreen = document.getElementById('loginScreen');
+        const adminContainer = document.getElementById('adminContainer');
+        const adminEmail = document.getElementById('adminEmail');
+        const adminPassword = document.getElementById('adminPassword');
+        const loginBtn = document.getElementById('loginBtn');
+        const loginError = document.getElementById('loginError');
+
+        window.addEventListener('supabase-ready', init);
+        if (window.supabaseClient) init();
+
+        async function init() {
+            if (initialized) return;
+            initialized = true;
+
+            try {
+                const session = await SB.getSession();
+                if (session) { currentUser = session.user; showPanel(); }
+                else { loginScreen.classList.remove('hidden'); setTimeout(() => adminEmail.focus(), 100); }
+            } catch (e) { loginScreen.classList.remove('hidden'); }
+
+            SB.onAuthChange((event, session) => {
+                if (event === 'SIGNED_OUT') {
+                    currentUser = null;
+                    loginScreen.classList.remove('hidden');
+                    adminContainer.classList.remove('active');
+                }
+            });
+
+            if (localStorage.getItem('theme') === 'light') {
+                document.body.classList.add('light-mode');
+                document.getElementById('themeIcon').className = 'fas fa-sun';
+            }
+
+            adminPassword.addEventListener('keypress', (e) => { if (e.key === 'Enter') loginAdmin(); });
+        }
+
+        async function loginAdmin() {
+            const email = adminEmail.value.trim();
+            const password = adminPassword.value;
+            if (!email || !password) { showLoginError('الرجاء إدخال البريد وكلمة المرور'); return; }
+
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> جارٍ الدخول...';
+            loginError.classList.remove('visible');
+
+            try {
+                const { user } = await SB.signIn(email, password);
+                currentUser = user;
+                showPanel();
+                showToast('مرحباً بك ✨');
+            } catch (err) {
+                console.error('Login error:', err);
+                showLoginError('بيانات الدخول غير صحيحة: ' + err.message);
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> دخول';
+            }
+        }
+
+        function showLoginError(msg) { loginError.textContent = msg; loginError.classList.add('visible'); }
+
+        async function logoutAdmin() {
+            if (!confirm('هل تريد تسجيل الخروج؟')) return;
+            try { await SB.signOut(); } catch (e) {}
+            currentUser = null;
+            loginScreen.classList.remove('hidden');
+            adminContainer.classList.remove('active');
+            adminPassword.value = '';
+            adminEmail.value = '';
+        }
+
+        function showPanel() {
+            loginScreen.classList.add('hidden');
+            adminContainer.classList.add('active');
+            if (currentUser) document.getElementById('userEmail').textContent = currentUser.email;
+            renderAdmin();
+        }
+
+        document.querySelectorAll('.admin-nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.admin-nav-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                const tab = item.getAttribute('data-tab');
+                document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+                document.querySelector(`.admin-tab[data-tab="${tab}"]`).classList.add('active');
+            });
+        });
+
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            const isLight = document.body.classList.contains('light-mode');
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            document.getElementById('themeIcon').className = isLight ? 'fas fa-sun' : 'fas fa-moon';
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+        }
+
+        function formatDate(iso) {
+            const d = new Date(iso);
+            const diff = Math.floor((new Date() - d) / 1000);
+            if (diff < 60) return 'الآن';
+            if (diff < 3600) return `قبل ${Math.floor(diff / 60)} دقيقة`;
+            if (diff < 86400) return `قبل ${Math.floor(diff / 3600)} ساعة`;
+            if (diff < 604800) return `قبل ${Math.floor(diff / 86400)} يوم`;
+            return d.toLocaleDateString('ar-EG');
+        }
+
+        async function renderAdmin() {
+            try {
+                const [arts, projs, msgs] = await Promise.all([SB.getAllArticles(), SB.getAllProjects(), SB.getMessages()]);
+                articles = arts; projects = projs; messages = msgs;
+
+                const totalViews = articles.reduce((s, a) => s + (a.views || 0), 0);
+                document.getElementById('statArticles').textContent = articles.length;
+                document.getElementById('statProjects').textContent = projects.length;
+                document.getElementById('statViews').textContent = totalViews;
+                document.getElementById('statMessages').textContent = messages.length;
+
+                const top = [...articles].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 5);
+                document.getElementById('topArticlesList').innerHTML = top.length > 0 ? top.map(a => `
+                    <div class="list-item">
+                        <div class="list-item-icon"><i class="fas ${a.icon || 'fa-code'}"></i></div>
+                        <div class="list-item-info"><h4>${escapeHtml(a.title)}</h4><p><i class="fas fa-eye"></i> ${a.views || 0} مشاهدة</p></div>
+                    </div>
+                `).join('') : '<div class="empty-state"><i class="fas fa-chart-bar"></i><h3>لا توجد بيانات</h3></div>';
+
+                document.getElementById('adminArticlesList').innerHTML = articles.length > 0 ? articles.map(a => `
+                    <div class="list-item">
+                        <div class="list-item-icon"><i class="fas ${a.icon || 'fa-code'}"></i></div>
+                        <div class="list-item-info"><h4>${escapeHtml(a.title)}</h4><p>${escapeHtml(a.category || 'عام')} • ${escapeHtml(a.read_time || '')} • ${a.views || 0} مشاهدة</p></div>
+                        <div class="list-item-actions">
+                            <button class="mini-btn" onclick="openArticleForm('${a.id}')"><i class="fas fa-edit"></i></button>
+                            <button class="mini-btn danger" onclick="deleteArticle('${a.id}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                `).join('') : '<div class="empty-state"><i class="fas fa-newspaper"></i><h3>لا توجد مقالات</h3></div>';
+
+                document.getElementById('adminProjectsList').innerHTML = projects.length > 0 ? projects.map(p => `
+                    <div class="list-item">
+                        <div class="list-item-icon"><i class="fas fa-briefcase"></i></div>
+                        <div class="list-item-info"><h4>${escapeHtml(p.name)}</h4><p>${escapeHtml(p.category)} • ${escapeHtml(p.url)}</p></div>
+                        <div class="list-item-actions">
+                            <button class="mini-btn" onclick="openProjectForm('${p.id}')"><i class="fas fa-edit"></i></button>
+                            <button class="mini-btn danger" onclick="deleteProject('${p.id}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                `).join('') : '<div class="empty-state"><i class="fas fa-briefcase"></i><h3>لا توجد مشاريع</h3></div>';
+
+                document.getElementById('messagesList').innerHTML = messages.length > 0 ? messages.map(m => `
+                    <div class="message-item ${m.read ? '' : 'unread'}" onclick="viewMessage('${m.id}')">
+                        <div class="message-header">
+                            <div class="message-sender"><i class="fas fa-user-circle"></i>${escapeHtml(m.name)}</div>
+                            <div class="message-time">${formatDate(m.created_at)}</div>
+                        </div>
+                        <div class="message-preview">${escapeHtml(m.description)}</div>
+                    </div>
+                `).join('') : '<div class="empty-state"><i class="fas fa-inbox"></i><h3>لا توجد رسائل</h3></div>';
+
+                updateMessagesBadge();
+            } catch (err) {
+                console.error('Render error:', err);
+                showToast('خطأ في جلب البيانات: ' + err.message, 'error');
+            }
+        }
+
+        function updateMessagesBadge() {
+            const unread = messages.filter(m => !m.read).length;
+            const badge = document.getElementById('messagesBadge');
+            if (unread > 0) { badge.textContent = unread; badge.style.display = 'inline-block'; }
+            else { badge.style.display = 'none'; }
+        }
+
+        function openArticleForm(id = null) {
+            const isEdit = !!id;
+            document.getElementById('articleFormTitle').textContent = isEdit ? 'تعديل المقال' : 'مقال جديد';
+            document.getElementById('articleEditId').value = id || '';
+            if (isEdit) {
+                const a = articles.find(x => x.id === id);
+                document.getElementById('articleFormTitleInput').value = a.title;
+                document.getElementById('articleFormCategory').value = a.category || 'عام';
+                document.getElementById('articleFormReadTime').value = a.read_time || '5 دقائق';
+                document.getElementById('articleFormIcon').value = a.icon || 'fa-code';
+                document.getElementById('articleFormExcerpt').value = a.excerpt || '';
+                document.getElementById('articleFormContent').value = a.content || '';
+            } else {
+                document.getElementById('articleFormTitleInput').value = '';
+                document.getElementById('articleFormCategory').value = 'عام';
+                document.getElementById('articleFormReadTime').value = '5 دقائق';
+                document.getElementById('articleFormIcon').value = 'fa-code';
+                document.getElementById('articleFormExcerpt').value = '';
+                document.getElementById('articleFormContent').value = '';
+            }
+            document.getElementById('articleFormOverlay').classList.add('active');
+        }
+
+        function closeArticleForm() { document.getElementById('articleFormOverlay').classList.remove('active'); }
+
+        async function saveArticle() {
+            const id = document.getElementById('articleEditId').value;
+            const title = document.getElementById('articleFormTitleInput').value.trim();
+            const excerpt = document.getElementById('articleFormExcerpt').value.trim();
+            const content = document.getElementById('articleFormContent').value.trim();
+            if (!title || !excerpt || !content) { showToast('الرجاء ملء الحقول المطلوبة', 'error'); return; }
+
+            const data = {
+                title, excerpt, content,
+                icon: document.getElementById('articleFormIcon').value,
+                read_time: document.getElementById('articleFormReadTime').value || '5 دقائق',
+                category: document.getElementById('articleFormCategory').value || 'عام'
+            };
+
+            const btn = document.getElementById('saveArticleBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> جارٍ الحفظ...';
+            try {
+                if (id) { await SB.updateArticle(id, data); showToast('تم التحديث ✨'); }
+                else { await SB.createArticle(data); showToast('تمت الإضافة ✨'); }
+                closeArticleForm();
+                await renderAdmin();
+            } catch (err) { showToast('خطأ: ' + err.message, 'error'); }
+            finally { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> حفظ'; }
+        }
+
+        async function deleteArticle(id) {
+            if (!confirm('حذف هذا المقال؟')) return;
+            try { await SB.deleteArticle(id); showToast('تم الحذف'); await renderAdmin(); }
+            catch (err) { showToast('خطأ: ' + err.message, 'error'); }
+        }
+
+        function openProjectForm(id = null) {
+            const isEdit = !!id;
+            document.getElementById('projectFormTitle').textContent = isEdit ? 'تعديل المشروع' : 'مشروع جديد';
+            document.getElementById('projectEditId').value = id || '';
+            if (isEdit) {
+                const p = projects.find(x => x.id === id);
+                document.getElementById('projectFormName').value = p.name;
+                document.getElementById('projectFormUrl').value = p.url;
+                document.getElementById('projectFormDesc').value = p.description;
+                document.getElementById('projectFormCategory').value = p.category;
+                document.getElementById('projectFormTags').value = (p.tags || []).join(', ');
+            } else {
+                document.getElementById('projectFormName').value = '';
+                document.getElementById('projectFormUrl').value = '';
+                document.getElementById('projectFormDesc').value = '';
+                document.getElementById('projectFormCategory').value = 'site';
+                document.getElementById('projectFormTags').value = '';
+            }
+            document.getElementById('projectFormOverlay').classList.add('active');
+        }
+
+        function closeProjectForm() { document.getElementById('projectFormOverlay').classList.remove('active'); }
+
+        async function saveProject() {
+            const id = document.getElementById('projectEditId').value;
+            const name = document.getElementById('projectFormName').value.trim();
+            const url = document.getElementById('projectFormUrl').value.trim();
+            const description = document.getElementById('projectFormDesc').value.trim();
+            if (!name || !url || !description) { showToast('الرجاء ملء الحقول المطلوبة', 'error'); return; }
+
+            const data = {
+                name, url, description,
+                category: document.getElementById('projectFormCategory').value,
+                tags: document.getElementById('projectFormTags').value.split(',').map(t => t.trim()).filter(Boolean)
+            };
+            const btn = document.getElementById('saveProjectBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> جارٍ الحفظ...';
+            try {
+                if (id) { await SB.updateProject(id, data); showToast('تم التحديث ✨'); }
+                else { await SB.createProject(data); showToast('تمت الإضافة ✨'); }
+                closeProjectForm();
+                await renderAdmin();
+            } catch (err) { showToast('خطأ: ' + err.message, 'error'); }
+            finally { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> حفظ'; }
+        }
+
+        async function deleteProject(id) {
+            if (!confirm('حذف هذا المشروع؟')) return;
+            try { await SB.deleteProject(id); showToast('تم الحذف'); await renderAdmin(); }
+            catch (err) { showToast('خطأ: ' + err.message, 'error'); }
+        }
+
+        async function viewMessage(id) {
+            const m = messages.find(x => x.id === id);
+            if (!m) return;
+            if (!m.read) {
+                m.read = true;
+                try { await SB.updateMessage(id, { read: true }); } catch (e) {}
+                updateMessagesBadge();
+            }
+            const labels = { 'converter': 'أداة تحويل', 'calculator': 'حاسبة تفاعلية', 'generator': 'مولّد', 'educational': 'أداة تعليمية', 'management': 'نظام إدارة', 'other': 'أداة أخرى' };
+            document.getElementById('messageViewBody').innerHTML = `
+                <div class="message-detail-row"><strong>الاسم:</strong><span>${escapeHtml(m.name)}</span></div>
+                <div class="message-detail-row"><strong>الهاتف:</strong><span style="direction:ltr;">${escapeHtml(m.phone)}</span></div>
+                <div class="message-detail-row"><strong>النوع:</strong><span>${labels[m.tool_type] || m.tool_type}</span></div>
+                <div class="message-detail-row"><strong>الأولوية:</strong><span>${escapeHtml(m.priority)}</span></div>
+                ${m.budget ? `<div class="message-detail-row"><strong>الميزانية:</strong><span>${escapeHtml(m.budget)}</span></div>` : ''}
+                <div class="message-detail-row"><strong>التاريخ:</strong><span>${new Date(m.created_at).toLocaleString('ar-EG')}</span></div>
+                <div class="message-detail-row"><strong>الوصف:</strong></div>
+                <div class="message-detail-body">${escapeHtml(m.description)}</div>
+            `;
+            document.getElementById('deleteMessageBtn').onclick = () => deleteMessage(id);
+            document.getElementById('messageViewOverlay').classList.add('active');
+        }
+
+        function closeMessageView() { document.getElementById('messageViewOverlay').classList.remove('active'); }
+
+        async function deleteMessage(id) {
+            if (!confirm('حذف هذه الرسالة؟')) return;
+            try { await SB.deleteMessage(id); closeMessageView(); showToast('تم الحذف'); await renderAdmin(); }
+            catch (err) { showToast('خطأ: ' + err.message, 'error'); }
+        }
+
+        async function clearAllMessages() {
+            if (!confirm('حذف جميع الرسائل؟')) return;
+            try { await SB.deleteAllMessages(); showToast('تم حذف جميع الرسائل'); await renderAdmin(); }
+            catch (err) { showToast('خطأ: ' + err.message, 'error'); }
+        }
+
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = msg;
+            const icon = toast.querySelector('i');
+            if (type === 'error') { icon.className = 'fas fa-exclamation-circle'; toast.style.background = 'linear-gradient(135deg, #ff4757, #ff6b81)'; }
+            else { icon.className = 'fas fa-check-circle'; toast.style.background = 'var(--gradient-1)'; }
+            toast.classList.add('show');
+            clearTimeout(toast._t);
+            toast._t = setTimeout(() => toast.classList.remove('show'), 4000);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') { closeArticleForm(); closeProjectForm(); closeMessageView(); }
+        });
+    </script>
+</body>
+</html>
